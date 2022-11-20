@@ -1,57 +1,133 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client"
 
-export default function Home() {
+import { useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
+import { auth } from "../firebase/config"
+import firebaseErrors from "../firebase/errorCodes"
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from "firebase/auth"
+
+export default function Login() {
+  const Router = useRouter()
+
+  const [currentError, setCurrentError] = useState("")
+  const [loginScreen, setLoginScreen] = useState(true)
+
+  const loginHandler = useCallback(
+    async (event: any) => {
+      event.preventDefault()
+      const { email, password } = event.target.elements
+      try {
+        await signInWithEmailAndPassword(auth, email.value, password.value)
+        Router.push("/dashboard")
+      } catch (error: any) {
+        /* @ts-ignore */
+        setCurrentError(firebaseErrors[error.code])
+      }
+    },
+    [Router]
+  )
+
+  const registerHandler = useCallback(
+    async (event: any) => {
+      event.preventDefault()
+      const { email, password, confirmPassword } = event.target.elements
+      try {
+        if (password !== confirmPassword) {
+          return alert("Passwords do not match")
+        }
+        await createUserWithEmailAndPassword(auth, email.value, password.value)
+        Router.push("/dashboard")
+      } catch (error: any) {
+        setCurrentError(error.message)
+      }
+    },
+    [Router]
+  )
+
   return (
-    <div className={styles.container}>
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js 13!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://beta.nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js 13</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Explore the Next.js 13 playground.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates/next.js/app-directory?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>Deploy your Next.js site to a public URL with Vercel.</p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+    <div className="flex items-center justify-center h-screen">
+      <div className="w-full max-w-xs">
+        <form
+          className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+          onSubmit={loginScreen ? loginHandler : registerHandler}
         >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
+          <h1 className="text-center text-gray-700 text-sm font-bold mb-4 ">
+            {loginScreen ? "Login" : "Register"}
+          </h1>
+          {currentError && (
+            <p className="text-red-500 text-xs italic">{currentError}</p>
+          )}
+          <div className="mb-4">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="username"
+            >
+              Email
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="email"
+              name="email"
+              type="email"
+              placeholder="email"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="password"
+            >
+              Password
+            </label>
+            <input
+              className="shadow appearance-none border border-red-500 rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              id="password"
+              name="password"
+              type="password"
+            />
+          </div>
+          {!loginScreen ? (
+            <div className="mb-4">
+              <label
+                className="block text-gray-700 text-sm font-bold mb-2"
+                htmlFor="confirmPassword"
+              >
+                Confirm Password
+              </label>
+              <input
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+              />
+            </div>
+          ) : (
+            <></>
+          )}
+          <div className="flex items-center justify-between">
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              type="submit"
+            >
+              {loginScreen ? "Login" : "Register"}
+            </button>
+            <a
+              className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+              href="#"
+              onClick={() => setLoginScreen(!loginScreen)}
+            >
+              Not Registered yet ?
+            </a>
+          </div>
+        </form>
+        <p className="text-center text-gray-500 text-xs">
+          &copy;2022 FarmerDeck. All rights reserved.
+        </p>
+      </div>
     </div>
   )
 }
